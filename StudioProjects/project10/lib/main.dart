@@ -28,10 +28,7 @@ class MyApp extends StatelessWidget {
           iconTheme: IconThemeData(color: Colors.black87),
         ),
       ),
-
-      // ⬇️ LOGIN JADI HALAMAN PERTAMA
-      home: const LoginPage(),
+      home: const LoginPage(), // 🔥 PENTING
     );
   }
 }
-  

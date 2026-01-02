@@ -1,9 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:project10/pages/dashboard.dart';
+import 'package:project10/pages/dashboard_user.dart';
 
 import '../models/global_data.dart';
 import 'user_list_page.dart';
+// kalau kamu punya dashboard admin, import di sini
+// import 'dashboard_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -37,18 +41,28 @@ class _LoginPageState extends State<LoginPage> {
       final decoded = jsonDecode(res.body);
 
       if (res.statusCode == 200 && decoded['success'] == true) {
-        // SIMPAN TOKEN (GLOBAL)
+        // ================= SIMPAN TOKEN & ROLE =================
         authToken = decoded['data']['token'];
+        userRole  = decoded['data']['user']['role'];
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Login berhasil")),
         );
 
-        // PINDAH KE USER LIST
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const UserListPage()),
-        );
+        // ================= REDIRECT BERDASARKAN ROLE =================
+        if (userRole == 'admin') {
+          // sementara ke user list dulu (boleh diganti dashboard admin)
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const DashboardPage()),
+          );
+        } else {
+          // user biasa
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const DashboardUserPage()),
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(decoded['message'] ?? "Login gagal")),
