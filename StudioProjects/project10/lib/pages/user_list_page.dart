@@ -1,10 +1,11 @@
-// lib/pages/user_list_page.dart
-
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
 import '../models/global_data.dart';
 import '../widgets/sidemenu.dart';
-import 'edit_user_page.dart'; // Import Halaman Edit
-import 'view_user_page.dart'; // Import Halaman View (BARU)
+import 'edit_user_page.dart';
+import 'view_user_page.dart';
 
 class UserListPage extends StatefulWidget {
   const UserListPage({super.key});
@@ -16,32 +17,108 @@ class UserListPage extends StatefulWidget {
 class _UserListPageState extends State<UserListPage> {
   List<UserModel> users = [];
   TextEditingController searchC = TextEditingController();
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    users = dummyUsers;
+    fetchUsers();
   }
 
+  // ================= GET USERS (PAKAI TOKEN) =================
+  Future<void> fetchUsers() async {
+    try {
+      final res = await http.get(
+        Uri.parse("http://127.0.0.1:8000/api/users"),
+        headers: {
+          "Accept": "application/json",
+          "Authorization": "Bearer $authToken",
+        },
+      );
+
+      print("STATUS USERS: ${res.statusCode}");
+      print(res.body);
+
+      if (res.statusCode == 200) {
+        final decoded = jsonDecode(res.body);
+
+        setState(() {
+          users = (decoded['data'] as List)
+              .map((e) => UserModel.fromJson(e))
+              .toList();
+          isLoading = false;
+        });
+      } else {
+        setState(() => isLoading = false);
+        showSnack("Gagal mengambil data user (${res.statusCode})");
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+      showSnack("Error: $e");
+    }
+  }
+
+  // ================= SEARCH =================
   void searchUser() {
     String text = searchC.text.toLowerCase();
     setState(() {
-      users = dummyUsers
+      users = users
           .where((u) => u.username.toLowerCase().contains(text))
           .toList();
     });
   }
 
-  void deleteUser(int id) {
-    setState(() {
-      dummyUsers.removeWhere((u) => u.id == id);
-      users = List.from(dummyUsers);
-    });
+  // ================= DELETE USER (PAKAI TOKEN) =================
+  Future<void> deleteUser(int id) async {
+    final res = await http.delete(
+      Uri.parse("http://127.0.0.1:8000/api/users/$id"),
+      headers: {
+        "Accept": "application/json",
+        "Authorization": "Bearer $authToken",
+      },
+    );
+
+    if (res.statusCode == 200) {
+      fetchUsers();
+      showSnack("User berhasil dihapus");
+    } else {
+      showSnack("Gagal menghapus user (${res.statusCode})");
+    }
+  }
+
+  // ================= SNACKBAR =================
+  void showSnack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("User dihapus")),
+      SnackBar(content: Text(msg)),
     );
   }
 
+  // ================= DIALOG =================
+  void showDeleteDialog(int id) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Hapus User"),
+        content: const Text("Apakah kamu yakin ingin menghapus user ini?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Batal"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              deleteUser(id);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text("Hapus"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -52,9 +129,11 @@ class _UserListPageState extends State<UserListPage> {
         elevation: 1,
       ),
       drawer: const SideMenu(),
-      body: Column(
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
         children: [
-          // Search Bar
+          // SEARCH BAR
           Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
@@ -66,7 +145,6 @@ class _UserListPageState extends State<UserListPage> {
                       hintText: "Cari username...",
                       prefixIcon: Icon(Icons.search),
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10),
                     ),
                   ),
                 ),
@@ -79,7 +157,7 @@ class _UserListPageState extends State<UserListPage> {
             ),
           ),
 
-          // List User
+          // LIST USER
           Expanded(
             child: ListView.builder(
               itemCount: users.length,
@@ -87,58 +165,59 @@ class _UserListPageState extends State<UserListPage> {
                 final u = users[i];
 
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  margin: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 6),
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-                    // Foto Profil Asset
                     leading: CircleAvatar(
                       radius: 25,
                       backgroundImage: u.fotoProfil.isNotEmpty
-                          ? AssetImage(u.fotoProfil) as ImageProvider
+                          ? NetworkImage(
+                          "http://127.0.0.1:8000/storage/${u.fotoProfil}")
                           : null,
                       child: u.fotoProfil.isEmpty
                           ? const Icon(Icons.person)
                           : null,
-                      backgroundColor: Colors.grey[300],
                     ),
-
-                    title: Text(u.username, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    title: Text(
+                      u.username,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold),
+                    ),
                     subtitle: Text(u.socialMedia),
-
-                    // Menu Pilihan (Lihat, Edit, Hapus)
                     trailing: PopupMenuButton(
                       onSelected: (value) {
-                        if (value == "hapus") {
-                          deleteUser(u.id);
-                        }
-                        else if (value == "edit") {
-                          // Ke Halaman Edit
+                        if (value == "lihat") {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const EditUserPage(),
-                              settings: RouteSettings(arguments: u.id),
-                            ),
-                          ).then((_) {
-                            setState(() => users = dummyUsers); // Refresh data
-                          });
-                        }
-                        else if (value == "lihat") {
-                          // <--- KE HALAMAN VIEW (BARU)
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ViewUserPage(),
-                              settings: RouteSettings(arguments: u.id), // Kirim ID
+                              builder: (_) => const ViewUserPage(),
+                              settings:
+                              RouteSettings(arguments: u.id),
                             ),
                           );
+                        } else if (value == "edit") {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const EditUserPage(),
+                              settings:
+                              RouteSettings(arguments: u.id),
+                            ),
+                          ).then((_) => fetchUsers());
+                        } else if (value == "hapus") {
+                          showDeleteDialog(u.id);
                         }
                       },
                       itemBuilder: (context) => const [
-                        PopupMenuItem(value: "lihat", child: Text("Lihat")),
-                        PopupMenuItem(value: "edit", child: Text("Edit")),
-                        PopupMenuItem(value: "hapus", child: Text("Hapus", style: TextStyle(color: Colors.red))),
+                        PopupMenuItem(
+                            value: "lihat", child: Text("Lihat")),
+                        PopupMenuItem(
+                            value: "edit", child: Text("Edit")),
+                        PopupMenuItem(
+                          value: "hapus",
+                          child: Text("Hapus",
+                              style: TextStyle(color: Colors.red)),
+                        ),
                       ],
                     ),
                   ),
