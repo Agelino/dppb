@@ -1,15 +1,84 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+import '../models/global_data.dart';
 
 class FullBacaanPage2 extends StatefulWidget {
+  final int bookId;
+
+  const FullBacaanPage2({super.key, required this.bookId});
+
   @override
   State<FullBacaanPage2> createState() => _FullBacaanPage2State();
 }
 
 class _FullBacaanPage2State extends State<FullBacaanPage2> {
   double fontSize = 15;
-  final TextEditingController commentController = TextEditingController();
+  bool isLoading = true;
 
-  List<Map<String, String>> comments = [];
+  String judul = '';
+  String chapter = 'Chapter 2';
+  String isi = '';
+
+  final TextEditingController commentController = TextEditingController();
+  List comments = [];
+
+  static const String baseUrl = 'http://127.0.0.1:8000/api';
+
+  // ================= GET LANJUTAN BACAAN =================
+  Future<void> getBacaanLanjutan() async {
+    try {
+      final res = await http.get(
+        Uri.parse('$baseUrl/books/${widget.bookId}?page=2'),
+        headers: {
+          "Accept": "application/json",
+          "Authorization": "Bearer $authToken",
+        },
+      );
+
+      final decoded = jsonDecode(res.body);
+
+      if (res.statusCode == 200) {
+        setState(() {
+          judul = decoded['data']['title'];
+          isi = decoded['data']['content'] ?? '';
+          comments = decoded['data']['komentar'] ?? [];
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      snackbar("Gagal memuat bacaan lanjutan");
+    }
+  }
+
+  // ================= ADD COMMENT =================
+  Future<void> addComment() async {
+    if (commentController.text.trim().isEmpty) return;
+
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/comments'),
+        headers: {
+          "Accept": "application/json",
+          "Authorization": "Bearer $authToken",
+        },
+        body: {
+          "book_id": widget.bookId.toString(),
+          "komentar": commentController.text,
+        },
+      );
+
+      if (res.statusCode == 200) {
+        commentController.clear();
+        getBacaanLanjutan();
+
+        snackbar("Komentar berhasil dikirim");
+      }
+    } catch (e) {
+      snackbar("Gagal mengirim komentar");
+    }
+  }
 
   void changeFont(double delta) {
     setState(() {
@@ -21,131 +90,112 @@ class _FullBacaanPage2State extends State<FullBacaanPage2> {
     });
   }
 
-  void addComment() {
-    if (commentController.text.trim().isEmpty) return;
+  void snackbar(String msg) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg)));
+  }
 
-    setState(() {
-      comments.insert(0, {
-        "nama": "kamu",
-        "komentar": commentController.text.trim(),
-        "waktu": "now",
-      });
-    });
-
-    commentController.clear();
+  @override
+  void initState() {
+    super.initState();
+    getBacaanLanjutan();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xffEFEFF0),
       body: SafeArea(
         child: Column(
           children: [
-            // ---------------- HEADER ----------------
+            // ================= HEADER =================
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               color: const Color(0xff6F98D9),
               child: Row(
                 children: [
-                  // TOMBOL KEMBALI
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                    child: const Icon(Icons.arrow_back,
+                        color: Colors.white, size: 28),
                   ),
-
-                  const SizedBox(width: 14),
-
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                      child: const TextField(
-                        decoration: InputDecoration(
-                          hintText: "Cari buku di sini..",
-                          border: InputBorder.none,
-                        ),
-                      ),
-                    ),
-                  ),
-
                   const SizedBox(width: 12),
-
                   const Text(
-                    "Safae",
+                    "Lanjutan Bacaan",
                     style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18),
                   )
                 ],
               ),
             ),
 
-            // ---------------- KONTEN ----------------
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      "Laut Bercerita",
-                      style: TextStyle(
+                    Text(
+                      judul,
+                      style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         color: Color(0xff27496D),
                       ),
                     ),
                     const SizedBox(height: 5),
-                    const Text(
-                      "Chapter 1 (Lanjutan)",
-                      style: TextStyle(fontSize: 13, color: Colors.grey),
-                    ),
+                    Text(chapter,
+                        style: const TextStyle(
+                            fontSize: 13, color: Colors.grey)),
+
                     const SizedBox(height: 20),
 
                     // FONT CONTROL
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        OutlinedButton(child: const Text("A -"), onPressed: () => changeFont(-1)),
+                        OutlinedButton(
+                            onPressed: () => changeFont(-1),
+                            child: const Text("A -")),
                         const SizedBox(width: 8),
-                        OutlinedButton(child: const Text("A"), onPressed: () => changeFont(0)),
+                        OutlinedButton(
+                            onPressed: () => changeFont(0),
+                            child: const Text("A")),
                         const SizedBox(width: 8),
-                        OutlinedButton(child: const Text("A +"), onPressed: () => changeFont(1)),
+                        OutlinedButton(
+                            onPressed: () => changeFont(1),
+                            child: const Text("A +")),
                       ],
                     ),
+
                     const SizedBox(height: 20),
 
-                    // TEXT BOX
+                    // ISI BACAAN
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)
-                        ],
                       ),
                       child: Text(
-                        "Saat pesawat memasuki wilayah tropis, awan tipis bergelantung di kejauhan. "
-                        "Laut memantulkan cahaya matahari seperti kaca besar yang memanjang tanpa ujung.\n\n"
-                        "Aku menarik napas panjang. Masih banyak hal yang belum benar-benar selesai. "
-                        "Pertanyaan-pertanyaanku menggantung, seolah menunggu untuk dijawab.\n\n"
-                        "Ada masa lalu yang belum sempat kupahami. Namun perjalanan ini harus tetap kulalui.\n"
-                        "Barangkali, di sebuah sudut waktu, jawaban itu akan kutemukan.",
-                        style: TextStyle(fontSize: fontSize, height: 1.7),
+                        isi,
+                        style:
+                            TextStyle(fontSize: fontSize, height: 1.7),
                       ),
                     ),
 
                     const SizedBox(height: 30),
 
-                    // KOMENTAR INPUT
+                    // COMMENT INPUT
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: TextField(
@@ -162,9 +212,6 @@ class _FullBacaanPage2State extends State<FullBacaanPage2> {
                         const SizedBox(width: 10),
                         ElevatedButton(
                           onPressed: addComment,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xff6F98D9),
-                          ),
                           child: const Text("Kirim"),
                         )
                       ],
@@ -172,39 +219,22 @@ class _FullBacaanPage2State extends State<FullBacaanPage2> {
 
                     const SizedBox(height: 20),
 
-                    // LIST KOMENTAR
+                    // COMMENT LIST
                     Column(
                       children: comments.map((c) {
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 16),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 22,
-                                backgroundColor: Colors.blue.shade200,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(c["nama"]!,
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.bold)),
-                                    Text(c["komentar"]!),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      c["waktu"]!,
-                                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            ],
+                        return ListTile(
+                          leading: const CircleAvatar(),
+                          title: Text(c['user']['username']),
+                          subtitle: Text(c['komentar']),
+                          trailing: Text(
+                            c['created_at']
+                                .toString()
+                                .substring(0, 10),
+                            style: const TextStyle(fontSize: 12),
                           ),
                         );
                       }).toList(),
-                    ),
+                    )
                   ],
                 ),
               ),

@@ -1,6 +1,6 @@
   import 'package:flutter/material.dart';
   import 'add_forum_page.dart';
-  import 'full_bacaan_page.dart';
+  import 'genre_page.dart';
   
 
   class DashboardUserPage extends StatelessWidget {
@@ -61,9 +61,9 @@
               _buildMenuButton(
                 context,
                 Icons.menu_book,
-                "Buka Full Bacaan",
+                "Genre Buku",
                     () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => FullBacaanPage())),
+                    MaterialPageRoute(builder: (_) => GenrePage())),
               ),
 
               const SizedBox(height: 30),

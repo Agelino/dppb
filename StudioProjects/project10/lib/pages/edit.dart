@@ -11,6 +11,7 @@ class EditPage extends StatefulWidget {
 
 class _EditPageState extends State<EditPage> {
   final _formKey = GlobalKey<FormState>();
+
   late TextEditingController _titleController;
   late TextEditingController _yearController;
   late TextEditingController _authorController;
@@ -20,23 +21,32 @@ class _EditPageState extends State<EditPage> {
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(text: widget.book.title);
-    _yearController = TextEditingController(text: widget.book.year);
-    _authorController = TextEditingController(text: widget.book.author);
-    _genreController = TextEditingController(text: widget.book.genre);
-    _contentController = TextEditingController(text: widget.book.content);
+    _titleController =
+        TextEditingController(text: widget.book.title);
+    _yearController =
+        TextEditingController(text: widget.book.year.toString());
+    _authorController =
+        TextEditingController(text: widget.book.author);
+    _genreController =
+        TextEditingController(text: widget.book.genre);
+    _contentController =
+        TextEditingController(text: widget.book.content);
   }
 
   void _save() {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        widget.book.title = _titleController.text;
-        widget.book.year = _yearController.text;
-        widget.book.author = _authorController.text;
-        widget.book.genre = _genreController.text;
-        widget.book.content = _contentController.text;
-      });
-      Navigator.pop(context);
+      final updatedBook = Book(
+        id: widget.book.id, 
+        title: _titleController.text,
+        author: _authorController.text,
+        genre: _genreController.text,
+        year: int.parse(_yearController.text),
+        description: _contentController.text,
+        content: _contentController.text,
+        image: widget.book.image, 
+      );
+
+      Navigator.pop(context, updatedBook);
     }
   }
 
@@ -50,13 +60,17 @@ class _EditPageState extends State<EditPage> {
         elevation: 1,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Edit Book: ${widget.book.title}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w300)),
+              Text(
+                "Edit Book: ${widget.book.title}",
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.w300),
+              ),
               const SizedBox(height: 20),
 
               Container(
@@ -64,15 +78,23 @@ class _EditPageState extends State<EditPage> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(8),
-                  boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 10)],
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.grey.shade200,
+                        blurRadius: 10)
+                  ],
                 ),
                 child: Column(
                   children: [
                     Row(
                       children: [
-                        Expanded(child: _buildInput("Title", _titleController)),
+                        Expanded(
+                            child: _buildInput(
+                                "Title", _titleController)),
                         const SizedBox(width: 15),
-                        Expanded(child: _buildInput("Year", _yearController)),
+                        Expanded(
+                            child: _buildInput(
+                                "Year", _yearController)),
                       ],
                     ),
                     const SizedBox(height: 15),
@@ -80,36 +102,47 @@ class _EditPageState extends State<EditPage> {
                     const SizedBox(height: 15),
                     _buildInput("Genre", _genreController),
                     const SizedBox(height: 15),
-                    _buildInput("Content", _contentController, maxLines: 5),
-
+                    _buildInput("Content", _contentController,
+                        maxLines: 5),
                     const SizedBox(height: 20),
 
                     const Align(
                       alignment: Alignment.centerLeft,
-                      child: Text("Book Cover Image", style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: Text(
+                        "Book Cover Image",
+                        style:
+                            TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                     const SizedBox(height: 10),
                     Container(
                       height: 100,
                       width: 80,
                       color: Colors.grey[200],
-                      child: const Icon(Icons.image, color: Colors.grey),
+                      child: const Icon(Icons.image,
+                          color: Colors.grey),
                     ),
                     const SizedBox(height: 20),
 
-                    // Tombol Update & Cancel
                     Row(
                       children: [
                         ElevatedButton(
                           onPressed: _save,
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                          child: const Text("Update Book", style: TextStyle(color: Colors.white)),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue),
+                          child: const Text("Update Book",
+                              style:
+                                  TextStyle(color: Colors.white)),
                         ),
                         const SizedBox(width: 10),
                         ElevatedButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
-                          child: const Text("Cancel", style: TextStyle(color: Colors.white)),
+                          onPressed: () =>
+                              Navigator.pop(context),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey),
+                          child: const Text("Cancel",
+                              style:
+                                  TextStyle(color: Colors.white)),
                         ),
                       ],
                     )
@@ -123,21 +156,31 @@ class _EditPageState extends State<EditPage> {
     );
   }
 
-  Widget _buildInput(String label, TextEditingController controller, {int maxLines = 1}) {
+  Widget _buildInput(String label,
+      TextEditingController controller,
+      {int maxLines = 1}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black54)),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.black54)),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
           maxLines: maxLines,
+          keyboardType:
+              label == "Year" ? TextInputType.number : null,
+          validator: (val) =>
+              val == null || val.isEmpty ? "Required" : null,
           decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: Colors.grey.shade300)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide(color: Colors.grey.shade300)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(4)),
+            contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12, vertical: 12),
           ),
-          validator: (val) => val!.isEmpty ? "Required" : null,
         ),
       ],
     );
