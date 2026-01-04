@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/book_model.dart';
+import 'full_bacaan_page_2.dart'; 
+import 'genre_page.dart';      
+import 'komentar.dart';    
 
 class FullBacaanPage extends StatefulWidget {
   final int bookId;
@@ -26,8 +29,7 @@ class _FullBacaanPageState extends State<FullBacaanPage> {
   }
 
   Future<Book> fetchBook() async {
-    final res =
-        await http.get(Uri.parse('$baseUrl/books/${widget.bookId}'));
+    final res = await http.get(Uri.parse('$baseUrl/books/${widget.bookId}'));
 
     if (res.statusCode == 200) {
       final decoded = json.decode(res.body);
@@ -83,6 +85,7 @@ class _FullBacaanPageState extends State<FullBacaanPage> {
                     style: const TextStyle(color: Colors.grey)),
                 const SizedBox(height: 20),
 
+                // tombol pengubah font
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -102,6 +105,7 @@ class _FullBacaanPageState extends State<FullBacaanPage> {
 
                 const SizedBox(height: 20),
 
+                // konten buku
                 Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
@@ -112,7 +116,50 @@ class _FullBacaanPageState extends State<FullBacaanPage> {
                     b.content,
                     style: TextStyle(fontSize: fontSize, height: 1.7),
                   ),
-                )
+                ),
+
+                const SizedBox(height: 30),
+
+                // tombol navigasi
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) =>
+                                  FullBacaanPage2(bookId: widget.bookId)),
+                        );
+                      },
+                      child: const Text('Selanjutnya'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const GenrePage()),
+                        );
+                      },
+                      child: const Text('Daftar Buku'),
+                    ),
+                    ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => KomentarPage(
+                            bookId: widget.bookId,
+                            page: 1, 
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text('Komentar'),
+                  ),
+                  ],
+                ) 
               ],
             ),
           );

@@ -1,13 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+
 import 'package:project10/pages/dashboard.dart';
 import 'package:project10/pages/dashboard_user.dart';
 
 import '../models/global_data.dart';
-import 'user_list_page.dart';
-// kalau kamu punya dashboard admin, import di sini
-// import 'dashboard_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -17,13 +15,20 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  TextEditingController emailC = TextEditingController();
-  TextEditingController passwordC = TextEditingController();
+  final TextEditingController emailC = TextEditingController();
+  final TextEditingController passwordC = TextEditingController();
 
   bool isLoading = false;
 
   // ================= LOGIN FUNCTION =================
   Future<void> login() async {
+    if (emailC.text.isEmpty || passwordC.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Email dan password wajib diisi")),
+      );
+      return;
+    }
+
     setState(() => isLoading = true);
 
     try {
@@ -41,23 +46,31 @@ class _LoginPageState extends State<LoginPage> {
       final decoded = jsonDecode(res.body);
 
       if (res.statusCode == 200 && decoded['success'] == true) {
-        // ================= SIMPAN TOKEN & ROLE =================
+        // ================= SIMPAN TOKEN =================
         authToken = decoded['data']['token'];
-        userRole  = decoded['data']['user']['role'];
+
+        // ================= SIMPAN USER LOGIN (INI WAJIB) =================
+        currentUser = UserModel.fromJson(decoded['data']['user']);
+
+        // ================= SIMPAN ROLE =================
+        userRole = decoded['data']['user']['role'];
+
+        debugPrint("LOGIN BERHASIL");
+        debugPrint("USER ID   : ${currentUser!.id}");
+        debugPrint("USERNAME  : ${currentUser!.username}");
+        debugPrint("ROLE      : $userRole");
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Login berhasil")),
         );
 
-        // ================= REDIRECT BERDASARKAN ROLE =================
+        // ================= REDIRECT =================
         if (userRole == 'admin') {
-          // sementara ke user list dulu (boleh diganti dashboard admin)
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const DashboardPage()),
           );
         } else {
-          // user biasa
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const DashboardUserPage()),
@@ -114,10 +127,13 @@ class _LoginPageState extends State<LoginPage> {
 
             SizedBox(
               width: double.infinity,
+              height: 48,
               child: ElevatedButton(
                 onPressed: isLoading ? null : login,
                 child: isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
+                    ? const CircularProgressIndicator(
+                        color: Colors.white,
+                      )
                     : const Text("Login"),
               ),
             ),
