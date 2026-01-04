@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-import '../models/global_data.dart';
+import '../models/user_list.dart';
 import '../widgets/sidemenu.dart';
 import 'edit_user_page.dart';
 import 'view_user_page.dart';
@@ -25,7 +25,7 @@ class _UserListPageState extends State<UserListPage> {
     fetchUsers();
   }
 
-  // ================= GET USERS (PAKAI TOKEN) =================
+  // ================= GET USERS =================
   Future<void> fetchUsers() async {
     try {
       final res = await http.get(
@@ -36,12 +36,8 @@ class _UserListPageState extends State<UserListPage> {
         },
       );
 
-      print("STATUS USERS: ${res.statusCode}");
-      print(res.body);
-
       if (res.statusCode == 200) {
         final decoded = jsonDecode(res.body);
-
         setState(() {
           users = (decoded['data'] as List)
               .map((e) => UserModel.fromJson(e))
@@ -68,7 +64,7 @@ class _UserListPageState extends State<UserListPage> {
     });
   }
 
-  // ================= DELETE USER (PAKAI TOKEN) =================
+  // ================= DELETE USER =================
   Future<void> deleteUser(int id) async {
     final res = await http.delete(
       Uri.parse("http://127.0.0.1:8000/api/users/$id"),
@@ -86,35 +82,39 @@ class _UserListPageState extends State<UserListPage> {
     }
   }
 
-  // ================= SNACKBAR =================
-  void showSnack(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg)),
-    );
-  }
-
-  // ================= DIALOG =================
-  void showDeleteDialog(int id) {
+  // ================= DIALOG HAPUS =================
+  void showDeleteDialog(int userId) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Hapus User"),
-        content: const Text("Apakah kamu yakin ingin menghapus user ini?"),
+        content: const Text(
+          "Apakah kamu yakin ingin menghapus user ini?\nTindakan ini tidak bisa dibatalkan.",
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text("Batal"),
           ),
-          ElevatedButton(
+          TextButton(
             onPressed: () {
               Navigator.pop(context);
-              deleteUser(id);
+              deleteUser(userId); // 🔥 HAPUS BARU DI SINI
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
             child: const Text("Hapus"),
           ),
         ],
       ),
+    );
+  }
+
+  // ================= SNACKBAR =================
+  void showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg)),
     );
   }
 
@@ -132,101 +132,112 @@ class _UserListPageState extends State<UserListPage> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
-        children: [
-          // SEARCH BAR
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: searchC,
-                    decoration: const InputDecoration(
-                      hintText: "Cari username...",
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
-                    ),
+                // SEARCH BAR
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: searchC,
+                          decoration: const InputDecoration(
+                            hintText: "Cari username...",
+                            prefixIcon: Icon(Icons.search),
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      ElevatedButton(
+                        onPressed: searchUser,
+                        child: const Text("Cari"),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: searchUser,
-                  child: const Text("Cari"),
+
+                // LIST USER
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: users.length,
+                    itemBuilder: (context, i) {
+                      final u = users[i];
+
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        child: ListTile(
+                          leading: SizedBox(
+                            width: 50,
+                            height: 50,
+                            child: ClipOval(
+                              child: (u.fotoProfil.isNotEmpty)
+                                  ? Image.network(
+                                      "http://127.0.0.1:8000/image/${u.fotoProfil}",
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (_, __, ___) =>
+                                              const Icon(Icons.person),
+                                    )
+                                  : const Icon(Icons.person),
+                            ),
+                          ),
+                          title: Text(
+                            u.username,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(u.socialMedia),
+                          trailing: PopupMenuButton(
+                            onSelected: (value) {
+                              if (value == "lihat") {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const ViewUserPage(),
+                                    settings: RouteSettings(
+                                      arguments: {
+                                        'userId': u.id,
+                                        'token': authToken,
+                                      },
+                                    ),
+                                  ),
+                                );
+                              } else if (value == "edit") {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const EditUserPage(),
+                                    settings:
+                                        RouteSettings(arguments: u.id),
+                                  ),
+                                ).then((_) => fetchUsers());
+                              } else if (value == "hapus") {
+                                showDeleteDialog(u.id); // 🔥 DIALOG
+                              }
+                            },
+                            itemBuilder: (context) => const [
+                              PopupMenuItem(
+                                  value: "lihat", child: Text("Lihat")),
+                              PopupMenuItem(
+                                  value: "edit", child: Text("Edit")),
+                              PopupMenuItem(
+                                value: "hapus",
+                                child: Text(
+                                  "Hapus",
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ],
             ),
-          ),
-
-          // LIST USER
-          Expanded(
-            child: ListView.builder(
-              itemCount: users.length,
-              itemBuilder: (context, i) {
-                final u = users[i];
-
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      radius: 25,
-                      backgroundImage: u.fotoProfil.isNotEmpty
-                          ? NetworkImage(
-                          "http://127.0.0.1:8000/storage/${u.fotoProfil}")
-                          : null,
-                      child: u.fotoProfil.isEmpty
-                          ? const Icon(Icons.person)
-                          : null,
-                    ),
-                    title: Text(
-                      u.username,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(u.socialMedia),
-                    trailing: PopupMenuButton(
-                      onSelected: (value) {
-                        if (value == "lihat") {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ViewUserPage(),
-                              settings:
-                              RouteSettings(arguments: u.id),
-                            ),
-                          );
-                        } else if (value == "edit") {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const EditUserPage(),
-                              settings:
-                              RouteSettings(arguments: u.id),
-                            ),
-                          ).then((_) => fetchUsers());
-                        } else if (value == "hapus") {
-                          showDeleteDialog(u.id);
-                        }
-                      },
-                      itemBuilder: (context) => const [
-                        PopupMenuItem(
-                            value: "lihat", child: Text("Lihat")),
-                        PopupMenuItem(
-                            value: "edit", child: Text("Edit")),
-                        PopupMenuItem(
-                          value: "hapus",
-                          child: Text("Hapus",
-                              style: TextStyle(color: Colors.red)),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

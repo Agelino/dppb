@@ -1,13 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:project10/pages/dashboard.dart';
-import 'package:project10/pages/dashboard_user.dart';
 
-import '../models/global_data.dart';
-import 'user_list_page.dart';
-// kalau kamu punya dashboard admin, import di sini
-// import 'dashboard_page.dart';
+import '../models/user_list.dart';
+import 'dashboard.dart';
+import 'dashboard_user.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -22,7 +19,7 @@ class _LoginPageState extends State<LoginPage> {
 
   bool isLoading = false;
 
-  // ================= LOGIN FUNCTION =================
+  // ================= LOGIN =================
   Future<void> login() async {
     setState(() => isLoading = true);
 
@@ -39,25 +36,41 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       final decoded = jsonDecode(res.body);
+      print("LOGIN RESPONSE => $decoded");
 
       if (res.statusCode == 200 && decoded['success'] == true) {
-        // ================= SIMPAN TOKEN & ROLE =================
-        authToken = decoded['data']['token'];
-        userRole  = decoded['data']['user']['role'];
+
+        // 🔥 AMBIL TOKEN (AMAN UNTUK SEMUA FORMAT)
+        authToken =
+            decoded['token'] ??
+            decoded['data']?['token'] ??
+            decoded['data']?['access_token'] ??
+            decoded['data']?['token']?['plainTextToken'] ??
+            '';
+
+        userRole =
+            decoded['user']?['role'] ??
+            decoded['data']?['user']?['role'] ??
+            '';
+
+        print("TOKEN FINAL => $authToken");
+        print("ROLE FINAL => $userRole");
+
+        if (authToken.isEmpty) {
+          throw Exception("TOKEN KOSONG DARI API LOGIN");
+        }
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Login berhasil")),
         );
 
-        // ================= REDIRECT BERDASARKAN ROLE =================
+        // ===== REDIRECT =====
         if (userRole == 'admin') {
-          // sementara ke user list dulu (boleh diganti dashboard admin)
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const DashboardPage()),
           );
         } else {
-          // user biasa
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const DashboardUserPage()),
@@ -87,28 +100,18 @@ class _LoginPageState extends State<LoginPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Email",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            const Text("Email", style: TextStyle(fontWeight: FontWeight.bold)),
             TextField(
               controller: emailC,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(border: OutlineInputBorder()),
             ),
             const SizedBox(height: 20),
 
-            const Text(
-              "Password",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            const Text("Password", style: TextStyle(fontWeight: FontWeight.bold)),
             TextField(
               controller: passwordC,
               obscureText: true,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(border: OutlineInputBorder()),
             ),
             const SizedBox(height: 30),
 
