@@ -1,95 +1,193 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'forum_detail_page.dart';
+import 'package:http/http.dart' as http;
+
+import '../models/forum_model.dart';
+import '../services/api.dart';
+import 'add_forum_page.dart';
+import 'edit_forum_page.dart';
 
 class ForumPage extends StatefulWidget {
-  final String newTitle;
-  final String newDesc;
-
-  ForumPage({required this.newTitle, required this.newDesc});
+  const ForumPage({super.key});
 
   @override
-  _ForumPageState createState() => _ForumPageState();
+  State<ForumPage> createState() => _ForumPageState();
 }
 
 class _ForumPageState extends State<ForumPage> {
-  List<Map<String, String>> dummyTopics = [
-    {
-      'judul': 'Diskusi Novel Fantasi',
-      'deskripsi': 'Ayo bahas novel fantasi favoritmu!',
-    },
-    {
-      'judul': 'Rekomendasi Buku Horor',
-      'deskripsi': 'Share buku horor paling menyeramkan!',
-    },
-  ];
+  late Future<List<ForumModel>> forums;
+
+  // 🔴 GANTI DENGAN TOKEN LOGIN KAMU
+  final String token =
+      '19|oG7d36MIjRao5GU9lQwSko5pBxLrEZGOrbLxjFija112761b';
 
   @override
   void initState() {
     super.initState();
+    forums = fetchForum();
+  }
 
-    // Tambah data baru di sini, BUKAN di build()
-    if (widget.newTitle.isNotEmpty) {
-      dummyTopics.insert(0, {
-        'judul': widget.newTitle,
-        'deskripsi': widget.newDesc,
-      });
+  // =========================
+  // FETCH FORUM
+  // =========================
+  Future<List<ForumModel>> fetchForum() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/forum'),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token', // 🔥 WAJIB
+        },
+      );
+
+      debugPrint('STATUS: ${response.statusCode}');
+      debugPrint('BODY: ${response.body}');
+
+      if (response.statusCode != 200) {
+        throw Exception('Gagal mengambil forum');
+      }
+
+      final Map<String, dynamic> json = jsonDecode(response.body);
+
+      return (json['data'] as List)
+          .map((e) => ForumModel.fromJson(e))
+          .toList();
+    } catch (e) {
+      debugPrint('ERROR FETCH FORUM: $e');
+      rethrow;
     }
   }
 
+  // =========================
+  // DELETE FORUM
+  // =========================
+  Future<void> deleteForum(int id) async {
+    await http.delete(
+      Uri.parse('$baseUrl/forum/$id'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Accept': 'application/json',
+      },
+    );
+
+    setState(() {
+      forums = fetchForum();
+    });
+  }
+
+  // =========================
+  // UI
+  // =========================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue.shade50,
-      appBar: AppBar(
-        title: Text("Daftar Forum Diskusi"),
-        backgroundColor: Colors.blue.shade700,
+      appBar: AppBar(title: const Text('Forum Diskusi')),
+
+      // ➕ TAMBAH FORUM
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AddForumPage()),
+          );
+
+          if (result == true) {
+            setState(() {
+              forums = fetchForum();
+            });
+          }
+        },
+        child: const Icon(Icons.add),
       ),
-      body: ListView.builder(
-        padding: EdgeInsets.all(12),
-        itemCount: dummyTopics.length,
-        itemBuilder: (context, index) {
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ForumDetailPage(
-                      title: dummyTopics[index]['judul']!),
+
+      body: FutureBuilder<List<ForumModel>>(
+        future: forums,
+        builder: (context, snapshot) {
+
+          // ⏳ LOADING
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          // ❌ ERROR
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                'Error: ${snapshot.error}',
+                style: const TextStyle(color: Colors.red),
+              ),
+            );
+          }
+
+          // 📭 KOSONG
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('Belum ada forum'));
+          }
+
+          final data = snapshot.data!;
+
+          // 📋 LIST FORUM
+          return ListView.builder(
+            itemCount: data.length,
+            itemBuilder: (context, i) {
+              return Card(
+                margin:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                child: ListTile(
+                  title: Text(
+                    data[i].judul,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    data[i].isi,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+
+                  // 🔥 BISA DIPENCET
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            EditForumPage(forum: data[i]),
+                      ),
+                    ).then((_) {
+                      setState(() {
+                        forums = fetchForum();
+                      });
+                    });
+                  },
+
+                  // ⋮ MENU
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                EditForumPage(forum: data[i]),
+                          ),
+                        ).then((_) {
+                          setState(() {
+                            forums = fetchForum();
+                          });
+                        });
+                      } else if (value == 'delete') {
+                        deleteForum(data[i].id);
+                      }
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(
+                          value: 'edit', child: Text('Edit')),
+                      PopupMenuItem(
+                          value: 'delete', child: Text('Delete')),
+                    ],
+                  ),
                 ),
               );
             },
-            child: Container(
-              margin: EdgeInsets.only(bottom: 12),
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                      blurRadius: 6,
-                      color: Colors.black12,
-                      offset: Offset(0, 3))
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    dummyTopics[index]['judul']!,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade800,
-                    ),
-                  ),
-                  SizedBox(height: 5),
-                  Text(
-                    dummyTopics[index]['deskripsi'] ?? "",
-                    style: TextStyle(color: Colors.grey.shade700),
-                  ),
-                ],
-              ),
-            ),
           );
         },
       ),
