@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/user_list.dart';
+import 'genre_page.dart';
+import 'komentar.dart';
 
 class FullBacaanPage2 extends StatefulWidget {
   final int bookId;
@@ -26,7 +28,7 @@ class _FullBacaanPage2State extends State<FullBacaanPage2> {
 
   static const String baseUrl = 'http://127.0.0.1:8000/api';
 
-  // ================= GET LANJUTAN BACAAN =================
+  // ================= GET BACAAAN + KOMENTAR =================
   Future<void> getBacaanLanjutan() async {
     try {
       final res = await http.get(
@@ -65,19 +67,23 @@ class _FullBacaanPage2State extends State<FullBacaanPage2> {
         },
         body: {
           "book_id": widget.bookId.toString(),
-          "komentar": commentController.text,
+          "komentar": commentController.text.trim(),
         },
       );
 
       if (res.statusCode == 200) {
         commentController.clear();
         getBacaanLanjutan();
-
         snackbar("Komentar berhasil dikirim");
       }
     } catch (e) {
       snackbar("Gagal mengirim komentar");
     }
+  }
+
+  void snackbar(String msg) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg)));
   }
 
   void changeFont(double delta) {
@@ -88,11 +94,6 @@ class _FullBacaanPage2State extends State<FullBacaanPage2> {
         fontSize = (fontSize + delta).clamp(13, 22);
       }
     });
-  }
-
-  void snackbar(String msg) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(msg)));
   }
 
   @override
@@ -116,7 +117,8 @@ class _FullBacaanPage2State extends State<FullBacaanPage2> {
           children: [
             // ================= HEADER =================
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               color: const Color(0xff6F98D9),
               child: Row(
                 children: [
@@ -137,6 +139,7 @@ class _FullBacaanPage2State extends State<FullBacaanPage2> {
               ),
             ),
 
+            // ================= CONTENT =================
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
@@ -151,7 +154,7 @@ class _FullBacaanPage2State extends State<FullBacaanPage2> {
                         color: Color(0xff27496D),
                       ),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 4),
                     Text(chapter,
                         style: const TextStyle(
                             fontSize: 13, color: Colors.grey)),
@@ -187,53 +190,41 @@ class _FullBacaanPage2State extends State<FullBacaanPage2> {
                       ),
                       child: Text(
                         isi,
-                        style:
-                            TextStyle(fontSize: fontSize, height: 1.7),
+                        style: TextStyle(fontSize: fontSize, height: 1.7),
                       ),
                     ),
 
                     const SizedBox(height: 30),
 
-                    // COMMENT INPUT
+                    // ================= NAVIGATION =================
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        Expanded(
-                          child: TextField(
-                            controller: commentController,
-                            maxLines: 3,
-                            decoration: InputDecoration(
-                              hintText: "Write a comment...",
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(18),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const GenrePage()),
+                            );
+                          },
+                          child: const Text('Daftar Buku'),
+                        ),
+                        ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => KomentarPage(
+                                bookId: widget.bookId,
+                                page: 2, 
                               ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        ElevatedButton(
-                          onPressed: addComment,
-                          child: const Text("Kirim"),
-                        )
+                          );
+                        },
+                        child: const Text('Komentar'),
+                      ),
                       ],
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // COMMENT LIST
-                    Column(
-                      children: comments.map((c) {
-                        return ListTile(
-                          leading: const CircleAvatar(),
-                          title: Text(c['user']['username']),
-                          subtitle: Text(c['komentar']),
-                          trailing: Text(
-                            c['created_at']
-                                .toString()
-                                .substring(0, 10),
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        );
-                      }).toList(),
                     )
                   ],
                 ),

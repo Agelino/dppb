@@ -19,7 +19,6 @@ class _LoginPageState extends State<LoginPage> {
 
   bool isLoading = false;
 
-  // ================= LOGIN =================
   Future<void> login() async {
     setState(() => isLoading = true);
 
@@ -36,35 +35,19 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       final decoded = jsonDecode(res.body);
-      print("LOGIN RESPONSE => $decoded");
 
       if (res.statusCode == 200 && decoded['success'] == true) {
+        authToken = decoded['data']['token'];
+        userRole = decoded['data']['user']['role'];
 
-        // 🔥 AMBIL TOKEN (AMAN UNTUK SEMUA FORMAT)
-        authToken =
-            decoded['token'] ??
-            decoded['data']?['token'] ??
-            decoded['data']?['access_token'] ??
-            decoded['data']?['token']?['plainTextToken'] ??
-            '';
+        currentUser = UserModel.fromJson(decoded['data']['user']);
 
-        userRole =
-            decoded['user']?['role'] ??
-            decoded['data']?['user']?['role'] ??
-            '';
-
-        print("TOKEN FINAL => $authToken");
-        print("ROLE FINAL => $userRole");
-
-        if (authToken.isEmpty) {
-          throw Exception("TOKEN KOSONG DARI API LOGIN");
-        }
+        if (!mounted) return;
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Login berhasil")),
         );
 
-        // ===== REDIRECT =====
         if (userRole == 'admin') {
           Navigator.pushReplacement(
             context,
@@ -90,7 +73,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -98,23 +80,18 @@ class _LoginPageState extends State<LoginPage> {
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Email", style: TextStyle(fontWeight: FontWeight.bold)),
             TextField(
               controller: emailC,
-              decoration: const InputDecoration(border: OutlineInputBorder()),
+              decoration: const InputDecoration(labelText: "Email"),
             ),
-            const SizedBox(height: 20),
-
-            const Text("Password", style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
             TextField(
               controller: passwordC,
               obscureText: true,
-              decoration: const InputDecoration(border: OutlineInputBorder()),
+              decoration: const InputDecoration(labelText: "Password"),
             ),
             const SizedBox(height: 30),
-
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(

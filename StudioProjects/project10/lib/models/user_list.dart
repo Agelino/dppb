@@ -23,3 +23,5 @@ class UserModel {
 
 String authToken = '';
 String userRole = '';
+
+UserModel? currentUser; 
