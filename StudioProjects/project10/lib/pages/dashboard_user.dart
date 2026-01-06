@@ -1,5 +1,5 @@
   import 'package:flutter/material.dart';
-  import 'add_forum_page.dart';
+  import 'forum_page.dart';
   import 'genre_page.dart';
   
 
@@ -53,7 +53,7 @@
                 Icons.forum,
                 "Masuk Forum Diskusi",
                     () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => AddForumPage())),
+                    MaterialPageRoute(builder: (_) => ForumPage())),
               ),
 
               const SizedBox(height: 10),
