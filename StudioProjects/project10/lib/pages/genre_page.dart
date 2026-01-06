@@ -15,8 +15,8 @@ class GenrePage extends StatefulWidget {
 class _GenrePageState extends State<GenrePage> {
   late Future<List<Book>> books;
 
-  static const String baseUrl =
-      'http://127.0.0.1:8000/api/books'; 
+  static const String apiBaseUrl = 'http://127.0.0.1:8000';
+  static const String booksEndpoint = '$apiBaseUrl/api/books';
 
   @override
   void initState() {
@@ -25,12 +25,11 @@ class _GenrePageState extends State<GenrePage> {
   }
 
   Future<List<Book>> fetchBooks() async {
-    final res = await http.get(Uri.parse(baseUrl));
+    final res = await http.get(Uri.parse(booksEndpoint));
 
     if (res.statusCode == 200) {
       final decoded = json.decode(res.body);
-      final List list = decoded['data']['data']; // ✅ FIX
-
+      final List list = decoded['data']['data'];
       return list.map((e) => Book.fromJson(e)).toList();
     } else {
       throw Exception('Gagal memuat buku');
@@ -51,7 +50,7 @@ class _GenrePageState extends State<GenrePage> {
       ),
       body: Column(
         children: [
-          // 🔍 SEARCH BAR (UI only)
+          // search bar
           Padding(
             padding: const EdgeInsets.all(16),
             child: TextField(
@@ -68,27 +67,28 @@ class _GenrePageState extends State<GenrePage> {
             ),
           ),
 
-          // 📚 GRID BUKU
+          // grid buku
           Expanded(
             child: FutureBuilder<List<Book>>(
               future: books,
               builder: (context, snapshot) {
-                if (snapshot.connectionState ==
-                    ConnectionState.waiting) {
-                  return const Center(
-                      child: CircularProgressIndicator());
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 if (snapshot.hasError) {
-                  return const Center(
-                      child: Text('Gagal memuat buku'));
+                  return Center(child: Text(snapshot.error.toString()));
                 }
 
                 final data = snapshot.data!;
 
+                if (data.isEmpty) {
+                  return const Center(child: Text('Buku tidak ditemukan'));
+                }
+
                 return GridView.builder(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   gridDelegate:
                       const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
@@ -99,6 +99,11 @@ class _GenrePageState extends State<GenrePage> {
                   itemCount: data.length,
                   itemBuilder: (context, index) {
                     final book = data[index];
+
+                    // image
+                    final imageUrl = book.image.startsWith('http')
+                    ? book.image
+                    : '$apiBaseUrl${book.image.startsWith('/') ? book.image : '/${book.image}'}';
 
                     return GestureDetector(
                       onTap: () {
@@ -116,100 +121,37 @@ class _GenrePageState extends State<GenrePage> {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color:
-                                  Colors.black12.withOpacity(0.05),
+                              color: Colors.black.withOpacity(0.05),
                               blurRadius: 8,
                             )
                           ],
                         ),
                         child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // 🖼 COVER + LOVE ICON
+                            // cover 
                             Expanded(
-                              child: Stack(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius:
-                                        const BorderRadius.vertical(
-                                      top: Radius.circular(16),
-                                    ),
-                                    child: (book.image ?? '')
-                                            .isNotEmpty
-                                        ? Image.network(
-                                            book.image,
-                                            width:
-                                                double.infinity,
-                                            fit: BoxFit.cover,
-                                          )
-                                        : Container(
-                                            color: Colors
-                                                .grey.shade200,
-                                            child:
-                                                const Center(
-                                              child: Icon(
-                                                Icons.book,
-                                                size: 40,
-                                                color:
-                                                    Colors.grey,
-                                              ),
-                                            ),
-                                          ),
-                                  ),
-
-                                  // ❤️ LOVE ICON
-                                  Positioned(
-                                    top: 8,
-                                    right: 8,
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        ScaffoldMessenger.of(
-                                                context)
-                                            .showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                                '${book.title} ditambahkan ke favorit'),
-                                            duration:
-                                                const Duration(
-                                                    seconds: 1),
-                                          ),
-                                        );
-                                      },
-                                      child: Container(
-                                        padding:
-                                            const EdgeInsets.all(
-                                                6),
-                                        decoration:
-                                            BoxDecoration(
-                                          color: Colors.white,
-                                          shape:
-                                              BoxShape.circle,
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color:
-                                                  Colors.black12,
-                                              blurRadius: 4,
-                                            )
-                                          ],
-                                        ),
-                                        child: const Icon(
-                                          Icons
-                                              .favorite_border,
-                                          color: Colors.red,
-                                          size: 20,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                              child: ClipRRect(
+                                borderRadius:
+                                    const BorderRadius.vertical(
+                                  top: Radius.circular(16),
+                                ),
+                                child: imageUrl.isNotEmpty
+                                    ? Image.network(
+                                        imageUrl,
+                                        width: double.infinity,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (_, __, ___) =>
+                                                _imageError(),
+                                      )
+                                    : _imageError(),
                               ),
                             ),
 
-                            // 📘 INFO
+                            // info
                             Padding(
-                              padding:
-                                  const EdgeInsets.all(10),
+                              padding: const EdgeInsets.all(10),
                               child: Column(
                                 crossAxisAlignment:
                                     CrossAxisAlignment.start,
@@ -217,8 +159,8 @@ class _GenrePageState extends State<GenrePage> {
                                   Text(
                                     book.title,
                                     maxLines: 2,
-                                    overflow: TextOverflow
-                                        .ellipsis,
+                                    overflow:
+                                        TextOverflow.ellipsis,
                                     style: const TextStyle(
                                       fontWeight:
                                           FontWeight.bold,
@@ -228,6 +170,9 @@ class _GenrePageState extends State<GenrePage> {
                                   const SizedBox(height: 4),
                                   Text(
                                     book.author,
+                                    maxLines: 1,
+                                    overflow:
+                                        TextOverflow.ellipsis,
                                     style: const TextStyle(
                                       fontSize: 12,
                                       color: Colors.grey,
@@ -246,6 +191,20 @@ class _GenrePageState extends State<GenrePage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+ 
+  Widget _imageError() {
+    return Container(
+      color: Colors.grey.shade200,
+      child: const Center(
+        child: Icon(
+          Icons.book,
+          size: 40,
+          color: Colors.grey,
+        ),
       ),
     );
   }

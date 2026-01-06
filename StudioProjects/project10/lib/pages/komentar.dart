@@ -32,7 +32,7 @@ class _KomentarPageState extends State<KomentarPage> {
     getComments();
   }
 
-  // GET KOMENTAR
+  // get komentar
   Future<void> getComments() async {
     try {
       final res = await http.get(
@@ -57,7 +57,7 @@ class _KomentarPageState extends State<KomentarPage> {
     }
   }
 
-  // POST KOMENTAR
+  //post komentar
   Future<void> addComment() async {
     if (commentController.text.trim().isEmpty) return;
 
@@ -84,7 +84,7 @@ class _KomentarPageState extends State<KomentarPage> {
     }
   }
 
-  // DELETE KOMENTAR
+  // delete komentar
   Future<void> deleteComment(int id) async {
     final res = await http.delete(
       Uri.parse('$api/komentar/$id'),

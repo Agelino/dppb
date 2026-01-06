@@ -60,6 +60,7 @@ class _FullBacaanPageState extends State<FullBacaanPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Baca Buku'),
+        backgroundColor: const Color(0xff6F98D9),
         actions: [
           IconButton(onPressed: showAction, icon: const Icon(Icons.more_vert))
         ],

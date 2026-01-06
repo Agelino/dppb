@@ -23,12 +23,8 @@ class _FullBacaanPage2State extends State<FullBacaanPage2> {
   String chapter = 'Chapter 2';
   String isi = '';
 
-  final TextEditingController commentController = TextEditingController();
-  List comments = [];
-
   static const String baseUrl = 'http://127.0.0.1:8000/api';
 
-  // ================= GET BACAAAN + KOMENTAR =================
   Future<void> getBacaanLanjutan() async {
     try {
       final res = await http.get(
@@ -45,39 +41,11 @@ class _FullBacaanPage2State extends State<FullBacaanPage2> {
         setState(() {
           judul = decoded['data']['title'];
           isi = decoded['data']['content'] ?? '';
-          comments = decoded['data']['komentar'] ?? [];
           isLoading = false;
         });
       }
     } catch (e) {
       snackbar("Gagal memuat bacaan lanjutan");
-    }
-  }
-
-  // ================= ADD COMMENT =================
-  Future<void> addComment() async {
-    if (commentController.text.trim().isEmpty) return;
-
-    try {
-      final res = await http.post(
-        Uri.parse('$baseUrl/comments'),
-        headers: {
-          "Accept": "application/json",
-          "Authorization": "Bearer $authToken",
-        },
-        body: {
-          "book_id": widget.bookId.toString(),
-          "komentar": commentController.text.trim(),
-        },
-      );
-
-      if (res.statusCode == 200) {
-        commentController.clear();
-        getBacaanLanjutan();
-        snackbar("Komentar berhasil dikirim");
-      }
-    } catch (e) {
-      snackbar("Gagal mengirim komentar");
     }
   }
 
@@ -115,7 +83,7 @@ class _FullBacaanPage2State extends State<FullBacaanPage2> {
       body: SafeArea(
         child: Column(
           children: [
-            // ================= HEADER =================
+            // header
             Container(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -139,7 +107,7 @@ class _FullBacaanPage2State extends State<FullBacaanPage2> {
               ),
             ),
 
-            // ================= CONTENT =================
+            // content
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
@@ -155,13 +123,14 @@ class _FullBacaanPage2State extends State<FullBacaanPage2> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(chapter,
-                        style: const TextStyle(
-                            fontSize: 13, color: Colors.grey)),
-
+                    Text(
+                      chapter,
+                      style: const TextStyle(
+                          fontSize: 13, color: Colors.grey),
+                    ),
                     const SizedBox(height: 20),
 
-                    // FONT CONTROL
+                    // font size
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -181,7 +150,7 @@ class _FullBacaanPage2State extends State<FullBacaanPage2> {
 
                     const SizedBox(height: 20),
 
-                    // ISI BACAAN
+                    // bacaan
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -196,7 +165,7 @@ class _FullBacaanPage2State extends State<FullBacaanPage2> {
 
                     const SizedBox(height: 30),
 
-                    // ================= NAVIGATION =================
+                    // navigasi
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
@@ -211,19 +180,19 @@ class _FullBacaanPage2State extends State<FullBacaanPage2> {
                           child: const Text('Daftar Buku'),
                         ),
                         ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => KomentarPage(
-                                bookId: widget.bookId,
-                                page: 2, 
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => KomentarPage(
+                                  bookId: widget.bookId,
+                                  page: 2,
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                        child: const Text('Komentar'),
-                      ),
+                            );
+                          },
+                          child: const Text('Komentar'),
+                        ),
                       ],
                     )
                   ],
