@@ -6,6 +6,8 @@ import '../models/forum_model.dart';
 import '../services/api.dart';
 import 'add_forum_page.dart';
 import 'edit_forum_page.dart';
+import 'forum_detail_page.dart';
+
 
 class ForumPage extends StatefulWidget {
   const ForumPage({super.key});
@@ -146,18 +148,17 @@ class _ForumPageState extends State<ForumPage> {
 
                   // 🔥 BISA DIPENCET
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            EditForumPage(forum: data[i]),
-                      ),
-                    ).then((_) {
-                      setState(() {
-                        forums = fetchForum();
-                      });
-                    });
-                  },
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => ForumDetailPage(forum: data[i]),
+    ),
+  ).then((_) {
+    setState(() {
+      forums = fetchForum();
+    });
+  });
+},
 
                   // ⋮ MENU
                   trailing: PopupMenuButton<String>(
