@@ -25,7 +25,6 @@ class _UserListPageState extends State<UserListPage> {
     fetchUsers();
   }
 
-  // ================= GET USERS =================
   Future<void> fetchUsers() async {
     try {
       final res = await http.get(
@@ -54,7 +53,6 @@ class _UserListPageState extends State<UserListPage> {
     }
   }
 
-  // ================= SEARCH =================
   void searchUser() {
     String text = searchC.text.toLowerCase();
     setState(() {
@@ -64,7 +62,6 @@ class _UserListPageState extends State<UserListPage> {
     });
   }
 
-  // ================= DELETE USER =================
   Future<void> deleteUser(int id) async {
     final res = await http.delete(
       Uri.parse("http://127.0.0.1:8000/api/users/$id"),
@@ -82,7 +79,6 @@ class _UserListPageState extends State<UserListPage> {
     }
   }
 
-  // ================= DIALOG HAPUS =================
   void showDeleteDialog(int userId) {
     showDialog(
       context: context,
@@ -99,7 +95,7 @@ class _UserListPageState extends State<UserListPage> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              deleteUser(userId); // 🔥 HAPUS BARU DI SINI
+              deleteUser(userId); 
             },
             style: TextButton.styleFrom(
               foregroundColor: Colors.red,
@@ -111,14 +107,12 @@ class _UserListPageState extends State<UserListPage> {
     );
   }
 
-  // ================= SNACKBAR =================
   void showSnack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(msg)),
     );
   }
 
-  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -133,7 +127,6 @@ class _UserListPageState extends State<UserListPage> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // SEARCH BAR
                 Padding(
                   padding: const EdgeInsets.all(12),
                   child: Row(
@@ -157,7 +150,6 @@ class _UserListPageState extends State<UserListPage> {
                   ),
                 ),
 
-                // LIST USER
                 Expanded(
                   child: ListView.builder(
                     itemCount: users.length,
@@ -214,7 +206,7 @@ class _UserListPageState extends State<UserListPage> {
                                   ),
                                 ).then((_) => fetchUsers());
                               } else if (value == "hapus") {
-                                showDeleteDialog(u.id); // 🔥 DIALOG
+                                showDeleteDialog(u.id);
                               }
                             },
                             itemBuilder: (context) => const [

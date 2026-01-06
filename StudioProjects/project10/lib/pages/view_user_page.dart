@@ -22,7 +22,6 @@ class _ViewUserPageState extends State<ViewUserPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    // 🔥 AMBIL ARGUMENT DARI NAVIGATOR
     final args =
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
 
@@ -32,7 +31,6 @@ class _ViewUserPageState extends State<ViewUserPage> {
     fetchUserDetail();
   }
 
-  // ================= GET DETAIL USER =================
   Future<void> fetchUserDetail() async {
     try {
       final res = await http.get(
@@ -57,7 +55,6 @@ class _ViewUserPageState extends State<ViewUserPage> {
     }
   }
 
-  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
