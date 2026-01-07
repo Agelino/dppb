@@ -8,7 +8,6 @@ import 'add_forum_page.dart';
 import 'edit_forum_page.dart';
 import 'forum_detail_page.dart';
 
-
 class ForumPage extends StatefulWidget {
   const ForumPage({super.key});
 
@@ -33,48 +32,61 @@ class _ForumPageState extends State<ForumPage> {
   // FETCH FORUM
   // =========================
   Future<List<ForumModel>> fetchForum() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/forum'),
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': 'Bearer $token', // 🔥 WAJIB
-        },
-      );
-
-      debugPrint('STATUS: ${response.statusCode}');
-      debugPrint('BODY: ${response.body}');
-
-      if (response.statusCode != 200) {
-        throw Exception('Gagal mengambil forum');
-      }
-
-      final Map<String, dynamic> json = jsonDecode(response.body);
-
-      return (json['data'] as List)
-          .map((e) => ForumModel.fromJson(e))
-          .toList();
-    } catch (e) {
-      debugPrint('ERROR FETCH FORUM: $e');
-      rethrow;
-    }
-  }
-
-  // =========================
-  // DELETE FORUM
-  // =========================
-  Future<void> deleteForum(int id) async {
-    await http.delete(
-      Uri.parse('$baseUrl/forum/$id'),
+    final response = await http.get(
+      Uri.parse('$baseUrl/forum'),
       headers: {
-        'Authorization': 'Bearer $token',
         'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
       },
     );
 
-    setState(() {
-      forums = fetchForum();
-    });
+    if (response.statusCode != 200) {
+      throw Exception('Gagal mengambil forum');
+    }
+
+    final Map<String, dynamic> json = jsonDecode(response.body);
+
+    return (json['data'] as List)
+        .map((e) => ForumModel.fromJson(e))
+        .toList();
+  }
+
+  // =========================
+  // DELETE FORUM + SNACKBAR
+  // =========================
+  Future<void> deleteForum(BuildContext context, int id) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/forum/$id'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Topik forum berhasil dihapus'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        setState(() {
+          forums = fetchForum();
+        });
+      } else {
+        throw Exception('Gagal menghapus forum');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menghapus forum: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   // =========================
@@ -87,6 +99,7 @@ class _ForumPageState extends State<ForumPage> {
 
       // ➕ TAMBAH FORUM
       floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
         onPressed: () async {
           final result = await Navigator.push(
             context,
@@ -99,7 +112,6 @@ class _ForumPageState extends State<ForumPage> {
             });
           }
         },
-        child: const Icon(Icons.add),
       ),
 
       body: FutureBuilder<List<ForumModel>>(
@@ -146,19 +158,20 @@ class _ForumPageState extends State<ForumPage> {
                     overflow: TextOverflow.ellipsis,
                   ),
 
-                  // 🔥 BISA DIPENCET
+                  // 🔥 DETAIL
                   onTap: () {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => ForumDetailPage(forum: data[i]),
-    ),
-  ).then((_) {
-    setState(() {
-      forums = fetchForum();
-    });
-  });
-},
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ForumDetailPage(forum: data[i]),
+                      ),
+                    ).then((_) {
+                      setState(() {
+                        forums = fetchForum();
+                      });
+                    });
+                  },
 
                   // ⋮ MENU
                   trailing: PopupMenuButton<String>(
@@ -176,7 +189,32 @@ class _ForumPageState extends State<ForumPage> {
                           });
                         });
                       } else if (value == 'delete') {
-                        deleteForum(data[i].id);
+                        showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text('Hapus Forum'),
+                            content: const Text(
+                                'Yakin mau hapus topik ini?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.pop(context),
+                                child: const Text('Batal'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  deleteForum(
+                                      context, data[i].id);
+                                },
+                                child: const Text(
+                                  'Hapus',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
                       }
                     },
                     itemBuilder: (_) => const [
