@@ -152,8 +152,8 @@ class _BookPageState extends State<BookPage> {
             child: ClipRRect(
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(8)),
-              child: book.imagePath != null && book.imagePath!.isNotEmpty
-                  ? Image.network(book.imagePath!, fit: BoxFit.cover)
+              child: book.coverImage != null && book.coverImage!.isNotEmpty
+                  ? Image.network(book.coverImage!, fit: BoxFit.cover)
                   : const Center(child: Icon(Icons.book)),
             ),
           ),

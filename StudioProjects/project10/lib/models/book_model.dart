@@ -6,7 +6,7 @@ class Book {
   final int year;
   final String description;
   final String content;
-  final String image;
+  final String coverImage;
 
   Book({
     required this.id,
@@ -16,10 +16,8 @@ class Book {
     required this.year,
     required this.description,
     required this.content,
-    required this.image,
+   required this.coverImage,
   });
-
-String? get imagePath => image;
 
   factory Book.fromJson(Map<String, dynamic> json) {
   return Book(
@@ -30,7 +28,7 @@ String? get imagePath => image;
     year: json['year'],
     description: json['description'] ?? '',
     content: json['content'] ?? '',
-    image: json['image_path'] ?? '', 
+    coverImage: json['image_url'] ?? '',
   );
 }
 }

@@ -43,7 +43,7 @@ class _EditPageState extends State<EditPage> {
         year: int.parse(_yearController.text),
         description: _contentController.text,
         content: _contentController.text,
-        image: widget.book.image, 
+        coverImage: widget.book.coverImage,
       );
 
       Navigator.pop(context, updatedBook);

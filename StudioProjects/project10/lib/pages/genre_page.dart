@@ -15,7 +15,7 @@ class GenrePage extends StatefulWidget {
 class _GenrePageState extends State<GenrePage> {
   late Future<List<Book>> books;
 
-  static const String apiBaseUrl = 'http://127.0.0.1:8000';
+  static const String apiBaseUrl = 'http://localhost:8000';
   static const String booksEndpoint = '$apiBaseUrl/api/books';
 
   @override
@@ -87,8 +87,10 @@ class _GenrePageState extends State<GenrePage> {
                 }
 
                 return GridView.builder(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   gridDelegate:
                       const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
@@ -100,10 +102,8 @@ class _GenrePageState extends State<GenrePage> {
                   itemBuilder: (context, index) {
                     final book = data[index];
 
-                    // image
-                    final imageUrl = book.image.startsWith('http')
-                    ? book.image
-                    : '$apiBaseUrl${book.image.startsWith('/') ? book.image : '/${book.image}'}';
+                    // ✅ SAMA PERSIS SEPERTI USER LIST
+                    final coverImage = book.coverImage;
 
                     return GestureDetector(
                       onTap: () {
@@ -123,33 +123,30 @@ class _GenrePageState extends State<GenrePage> {
                             BoxShadow(
                               color: Colors.black.withOpacity(0.05),
                               blurRadius: 8,
-                            )
+                            ),
                           ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // cover 
+                            // cover buku
                             Expanded(
                               child: ClipRRect(
                                 borderRadius:
                                     const BorderRadius.vertical(
                                   top: Radius.circular(16),
                                 ),
-                                child: imageUrl.isNotEmpty
-                                    ? Image.network(
-                                        imageUrl,
-                                        width: double.infinity,
-                                        fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (_, __, ___) =>
-                                                _imageError(),
-                                      )
-                                    : _imageError(),
+                                child: coverImage.isNotEmpty
+                                ? Image.network(
+                                    "http://127.0.0.1:8000/storage/${book.coverImage}",
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => _imageError(),
+                                  )
+                                : _imageError(),
                               ),
                             ),
 
-                            // info
+                            // info buku
                             Padding(
                               padding: const EdgeInsets.all(10),
                               child: Column(
@@ -195,7 +192,6 @@ class _GenrePageState extends State<GenrePage> {
     );
   }
 
- 
   Widget _imageError() {
     return Container(
       color: Colors.grey.shade200,

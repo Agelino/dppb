@@ -37,7 +37,7 @@ class _CreatePageState extends State<CreatePage> {
         year: int.parse(_yearController.text), 
         description: _contentController.text, 
         content: _contentController.text,
-        image: '', 
+        coverImage: '',
       );
 
       // NOTE: nanti ganti ke API POST
